@@ -1,14 +1,17 @@
 # reading data
-import matplotlib
+import matplotlib.pyplot as plt
 import pandas as pd
 import nltk
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
-from nltk.stem import PorterStemmer
+from nltk.stem import WordNetLemmatizer
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.metrics import accuracy_score, classification_report
+from sklearn.linear_model import RidgeClassifier
+
+
 
 data = pd.read_csv('data.csv')
 # drop unnecessary columns and rename cols
@@ -16,11 +19,11 @@ data.drop(['index', 'title'], axis=1, inplace=True)
 # data.head()
 
 # # check missing values
-data.isna().sum()
+# data.isna().sum()
 # # check data shape
 # data.shape
 # # check target balance
-# data['genre'].value_counts(normalize=True).plot.bar()
+# plt.plot(data['genre'].value_counts(normalize=True))
 
 # convert text to lowercase
 data['summary'] = data['summary'].str.lower()
@@ -33,9 +36,9 @@ def preprocess_text(text):
     tokens = word_tokenize(text)
     stop_words = set(stopwords.words("english"))
     filtered_tokens = [token.lower() for token in tokens if token.isalpha() and token.lower() not in stop_words]
-    stemmer = PorterStemmer()
-    stemmed_tokens = [stemmer.stem(token) for token in filtered_tokens]
-    return " ".join(stemmed_tokens)
+    lemmatize = WordNetLemmatizer()
+    lemmatized_tokens = [lemmatize.lemmatize(token) for token in filtered_tokens]
+    return " ".join(lemmatized_tokens)
 
 
 # pre-process the text input
@@ -53,20 +56,28 @@ X_test_tfidf = tfidf_vectorizer.transform(X_test)
 
 
 # train the classification model
-model = MultinomialNB()
-model.fit(X_train_tfidf, y_train)
+
+# model = MultinomialNB()
+# model.fit(X_train_tfidf, y_train)
+# accuracy: 0.42 ~ 0.45
+
+clf = RidgeClassifier(tol=1e-2, solver="sparse_cg")
+clf.fit(X_train_tfidf, y_train)
+# accuracy: 0.70
 
 # make predictions
-y_pred = model.predict(X_test_tfidf)
+# y_pred = model.predict(X_test_tfidf)
+pred = clf.predict(X_test_tfidf)
 
 # evaluate the model
 # Calculate accuracy and generate a classification report
-accuracy = accuracy_score(y_test, y_pred)
+accuracy = accuracy_score(y_test, pred)
 print(f"Accuracy: {accuracy:.2f}")
 
-report = classification_report(y_test, y_pred)
+report = classification_report(y_test, pred)
 print(report)
 
 
 # nltk.download("punkt")
 # nltk.download("stopwords")
+# nltk.download("wordnet")
