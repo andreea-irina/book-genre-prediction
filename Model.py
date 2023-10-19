@@ -5,12 +5,11 @@ import nltk
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.naive_bayes import MultinomialNB
 from sklearn.metrics import accuracy_score, classification_report
-from sklearn.linear_model import RidgeClassifier
-
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.linear_model import RidgeClassifier, RidgeClassifierCV
 
 
 data = pd.read_csv('data.csv')
@@ -61,9 +60,16 @@ X_test_tfidf = tfidf_vectorizer.transform(X_test)
 # model.fit(X_train_tfidf, y_train)
 # accuracy: 0.42 ~ 0.45
 
-clf = RidgeClassifier(tol=1e-2, solver="sparse_cg")
-clf.fit(X_train_tfidf, y_train)
+# clf = RidgeClassifier(tol=1e-2, solver="sparse_cg")
+# clf.fit(X_train_tfidf, y_train)
 # accuracy: 0.70
+
+# 0.98 train score
+# 0.58 accuracy with a standard deviation of 0.03
+clf = RidgeClassifierCV(alphas=[1e-3, 1e-2, 1e-1, 1])
+clf.fit(X_train_tfidf, y_train)
+train_score = clf.score(X_train_tfidf, y_train)
+print("%0.2f train score" % train_score)
 
 # make predictions
 # y_pred = model.predict(X_test_tfidf)
@@ -71,8 +77,12 @@ pred = clf.predict(X_test_tfidf)
 
 # evaluate the model
 # Calculate accuracy and generate a classification report
-accuracy = accuracy_score(y_test, pred)
-print(f"Accuracy: {accuracy:.2f}")
+scores = cross_val_score(clf, X_test_tfidf, y_test, cv=5)
+print("%0.2f accuracy with a standard deviation of %0.2f" % (scores.mean(), scores.std()))
+# test_score = clf.score(X_test_tfidf, y_test)
+# print("%0.2f test score" % test_score)
+# accuracy = clf.score(X_test_tfidf, y_test)
+# print(f"Accuracy: {accuracy:.2f}")
 
 report = classification_report(y_test, pred)
 print(report)
